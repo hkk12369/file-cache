@@ -1,0 +1,30 @@
+{
+  "name": "file-cache",
+  "version": "0.0.9",
+  "description": "File Based Cache for Node.js",
+  "main": "index.js",
+  "author": "Hitesh Khandelwal",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hkk12369/file-cache.git"
+  },
+  "bugs": {
+    "url": "https://github.com/hkk12369/file-cache/issues"
+  },
+  "homepage": "https://github.com/hkk12369/file-cache#readme",
+  "keywords": [
+    "file-cache",
+    "cache",
+    "disk-cache",
+    "fs-cache",
+    "file-system-cache",
+    "persistent-cache",
+    "file-key-value",
+    "fs-key-value"
+  ],
+  "dependencies": {
+    "@mongodb-js/zstd": "^1.0.0",
+    "timestring": "^6.0.0"
+  }
+}
