@@ -1,5 +1,5 @@
 {
-  "name": "file-cache",
+  "name": "@hkk12369/file-cache",
   "version": "0.0.9",
   "description": "File Based Cache for Node.js",
   "main": "index.js",
