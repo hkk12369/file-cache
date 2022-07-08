@@ -98,6 +98,7 @@ function setCtxStale(ctx, value) {
 class BaseCache {
     static logger = console;
     static _bypass = false;
+    static globalPrefix = 'a';
     static keySeparator = '/';
     static backend = {
         /**
@@ -210,7 +211,7 @@ class BaseCache {
      * @returns {string}
      */
 	_key(key) {
-        return ['RC', this.constructor.globalPrefix, this.prefix, key].join(this.constructor.keySeparator);
+        return ['HC', this.constructor.globalPrefix, this.prefix, key].join(this.constructor.keySeparator);
 	}
 
     async _get(key) {
@@ -277,7 +278,8 @@ class BaseCache {
 
     async _clear() {
         try {
-            await this.constructor.backend.clear();
+            const keyPath = ['HC', this.constructor.globalPrefix, this.prefix].join(this.constructor.keySeparator);
+            await this.constructor.backend.clear(keyPath);
         }
         catch (e) {
             this.logger.error(e);
