@@ -304,7 +304,7 @@ class BaseCache {
 	async getStale(key, defaultValue = undefined, options = {}, ctx = {}) {
         const gettingPromise = this._getting(key);
         if (gettingPromise) {
-            const [value] = await gettingPromise;
+            const value = await gettingPromise;
             if (value === undefined) return defaultValue;
             return value;
         }
