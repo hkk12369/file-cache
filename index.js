@@ -21,7 +21,7 @@ async function decompressMaybe(buffer) {
 }
 
 function hash(str) {
-	return crypto.createHash('sha1').update(str, 'binary').digest('base64url').replace(/[_-]/g, '').substring(5, 15);
+	return crypto.createHash('sha256').update(str, 'binary').digest('base64').replace(/[+=/]/g, '').substring(0, 17);
 }
 
 class FileCacheBackend extends BaseCache.Backend {
