@@ -1,6 +1,6 @@
 {
   "name": "@hkk12369/file-cache",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "File Based Cache for Node.js",
   "main": "index.js",
   "author": "Hitesh Khandelwal",
