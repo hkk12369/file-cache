@@ -133,6 +133,7 @@ class FileCacheBackend extends BaseCache.Backend {
 }
 
 class FileCache extends BaseCache {
+	static CACHE_ID = 'FC';
 	static Backend = FileCacheBackend;
 	static setCacheDir(cacheDir) {
 		this.Backend.CACHE_DIR = path.resolve(cacheDir);

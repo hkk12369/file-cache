@@ -181,14 +181,15 @@ class BaseCache {
 	 */
 	constructor(prefix, options = {}) {
         const cls = this.constructor;
+		this.KEY_SEPARATOR = cls.KEY_SEPARATOR;
 		this.prefix = prefix;
         this.logger = options.logger ?? cls.logger;
 		this.keyPath = [
 			cls.CACHE_ID,
 			cls.GLOBAL_PREFIX,
 			this.prefix,
-		].join(this.Backend.KEY_SEPARATOR);
-		this.backend = new Backend({
+		].join(this.KEY_SEPARATOR);
+		this.backend = new cls.Backend({
 			cache: this,
 		});
 	}
@@ -229,7 +230,7 @@ class BaseCache {
      * @returns {string}
      */
 	_key(key) {
-		return `${this.keyPath}${this.Backend.KEY_SEPARATOR}${key}`;
+		return `${this.keyPath}${this.KEY_SEPARATOR}${key}`;
 	}
 
     async _get(key) {
@@ -627,7 +628,7 @@ class BaseCache {
 	 * @return {function}
 	 */
 	memoize(fn, options = {}) {
-        const keySep = this.Backend.KEY_SEPARATOR;
+        const keySep = this.KEY_SEPARATOR;
         const key = `m${keySep}${Math.random().toString(36).substring(2)}`;
 		return async (...args) => {
 			let cacheKey;
