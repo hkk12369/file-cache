@@ -61,8 +61,8 @@ function setCtxStale(ctx, value) {
 
 /**
  * @typedef {object} CacheSetOpts
- * @property {number|string} ttl in ms / timestring ('1d 3h') default: 0
- * @property {number|string} staleTTL in ms / timestring ('1d 3h')
+ * @property {number|string|undefined} ttl in ms / timestring ('1d 3h') default: 0
+ * @property {number|string|undefined} staleTTL in ms / timestring ('1d 3h')
  *  set this if you want stale values to be returned and generation in the background
  *  values will be considered stale after this time period
  * @property {boolean} [requireResult=true]
@@ -93,77 +93,87 @@ function setCtxStale(ctx, value) {
  *  - process also gets called before saving the value in localCache, while fromJSON does not
  */
 
+class CacheBackend {
+	static KEY_SEPARATOR = '/';
+
+	constructor(opts = {}) {
+		this.cache = opts.cache;
+		this.CacheClass = this.cache.constructor;
+	}
+
+	/**
+	 * get the value from the real cache
+	 * @param {string} [key] key to get
+	 * @returns {Promise<CacheValue>} value object from the cache
+	 */
+	 async get(key) {
+		return null;
+	}
+
+	/**
+	 * set the value in the real cache
+	 * @param {string} [key] key to set
+	 * @param {any} [value] value to set
+	 * @param {object}
+	 * @returns {Promise<any>}
+	 */
+	async set(key, value, {t, c} = {}) {
+		return null;
+	}
+
+	/**
+	 * check whether the cache has a value
+	 * @param {string} [key] key to check
+	 * @returns {Promise<boolean>}
+	 */
+	async has(key) {
+		return false;
+	}
+
+	/**
+	 * check keys from the cache
+	 * @param {Array<string>} [keys] keys to delete
+	 * @returns {Promise<boolean>}
+	 */
+	async del(keys) {
+		return false;
+	}
+
+	/**
+	 * clear the cache
+	 * @param {Array<string>} [keys] keys to delete
+	 * @returns {Promise<boolean>}
+	 */
+	async clear(keyPath) {
+		return false;
+	}
+
+	/**
+	 * mark the keys as stale
+	 * @param {Array<string>} [keys] keys to mark stale
+	 * @returns {Promise<boolean>}
+	 */
+	async touch(keys, {t, c} = {}) {
+		return false;
+	}
+}
 
 
 class BaseCache {
     static logger = console;
     static _bypass = false;
-    static globalPrefix = 'a';
-    static keySeparator = '/';
-    static backend = {
-        /**
-         * get the value from the real cache
-         * @param {string} [key] key to get
-         * @returns {Promise<CacheValue>} value object from the cache
-         */
-        async get(key) {
-            return null;
-        },
+	static CACHE_ID = 'HC';
+    static GLOBAL_PREFIX = 'a';
+	// Backend need to be overridden for each implmeneting class
+    static Backend = CacheBackend;
 
-        /**
-         * set the value in the real cache
-         * @param {string} [key] key to set
-         * @param {any} [value] value to set
-         * @param {object} 
-         * @returns {Promise<any>}
-         */
-        async set(key, value, {t, c} = {}) {
-            return null;
-        },
-
-        /**
-         * check whether the cache has a value
-         * @param {string} [key] key to check
-         * @returns {Promise<boolean>}
-         */
-        async has(key) {
-            return false;
-        },
-
-        /**
-         * check keys from the cache
-         * @param {Array<string>} [keys] keys to delete
-         * @returns {Promise<boolean>}
-         */
-        async del(keys) {
-            return false;
-        },
-
-        /**
-         * clear the cache
-         * @param {Array<string>} [keys] keys to delete
-         * @returns {Promise<boolean>}
-         */
-        async clear(keyPath) {
-            return false;
-        },
-
-        /**
-         * mark the keys as stale
-         * @param {Array<string>} [keys] keys to mark stale
-         * @returns {Promise<boolean>}
-         */
-        async touch(keys, {t, c} = {}) {
-            return false;
-        },
-    };
+	static get KEY_SEPARATOR() {
+		return this.Backend.KEY_SEPARATOR;
+	}
 
     static setLogger(logger) {
         this.logger = logger;
     }
-
-    // These functions need to be overridden for each implmeneting class
-
 
 	/**
 	 * @param {string} prefix
@@ -173,6 +183,14 @@ class BaseCache {
         const cls = this.constructor;
 		this.prefix = prefix;
         this.logger = options.logger ?? cls.logger;
+		this.keyPath = [
+			cls.CACHE_ID,
+			cls.GLOBAL_PREFIX,
+			this.prefix,
+		].join(this.Backend.KEY_SEPARATOR);
+		this.backend = new Backend({
+			cache: this,
+		});
 	}
 
 	_fetching(map, key, value) {
@@ -211,12 +229,12 @@ class BaseCache {
      * @returns {string}
      */
 	_key(key) {
-        return ['HC', this.constructor.globalPrefix, this.prefix, key].join(this.constructor.keySeparator);
+		return `${this.keyPath}${this.Backend.KEY_SEPARATOR}${key}`;
 	}
 
     async _get(key) {
         try {
-            const val = await this.constructor.backend.get(this._key(key));
+            const val = await this.backend.get(this._key(key));
             if (val && val.t) {
                 if (val.c < Date.now() - val.t) {
                     this._del(key);
@@ -234,7 +252,7 @@ class BaseCache {
     async _set(key, value, ttl, createdAt) {
         if (value === undefined) return true;
         try {
-            await this.constructor.backend.set(this._key(key), value, {
+            await this.backend.set(this._key(key), value, {
                 t: ttl, 
                 c: createdAt || Date.now(),
             });
@@ -248,7 +266,7 @@ class BaseCache {
 
     async _has(key) {
         try {
-            return this.constructor.backend.has(this._key(key));
+            return this.backend.has(this._key(key));
         }
         catch (e) {
             this.logger.error(e);
@@ -259,7 +277,7 @@ class BaseCache {
     async _del(key) {
 		const keys = (Array.isArray(key) ? key : [key]).map(k => this._key(k));
         try  {
-            await this.constructor.backend.del(keys);
+            await this.backend.del(keys);
         }
         catch (e) {
             this.logger.error(e);
@@ -269,7 +287,7 @@ class BaseCache {
     async _markStale(key) {
         const keys = (Array.isArray(key) ? key : [key]).map(k => this._key(k));
         try {
-            await this.constructor.backend.touch(keys, {c: 0});
+            await this.backend.touch(keys, {c: 0});
         }
         catch (e) {
             this.logger.error(e);
@@ -278,8 +296,7 @@ class BaseCache {
 
     async _clear() {
         try {
-            const keyPath = ['HC', this.constructor.globalPrefix, this.prefix].join(this.constructor.keySeparator);
-            await this.constructor.backend.clear(keyPath);
+            await this.backend.clear(this.keyPath);
         }
         catch (e) {
             this.logger.error(e);
@@ -610,7 +627,7 @@ class BaseCache {
 	 * @return {function}
 	 */
 	memoize(fn, options = {}) {
-        const keySep = this.constructor.keySeparator;
+        const keySep = this.Backend.KEY_SEPARATOR;
         const key = `m${keySep}${Math.random().toString(36).substring(2)}`;
 		return async (...args) => {
 			let cacheKey;
